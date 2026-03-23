@@ -1,7 +1,7 @@
 #!/bin/bash
 # LichtFeld-Studio Ubuntu 22.04 + GCC14 + CUDA12.8
 # 完全自動ビルド＆再配布ZIP統合スクリプト
-# 2026/03/23 SDL3 依存追加版
+# 2026/03/23 SDL3 依存 & CMake 追加版
 
 set -e
 
@@ -36,11 +36,23 @@ if ! grep -q "cuda-12.8" ~/.bashrc; then
   echo 'export PATH=/usr/local/cuda-12.8/bin${PATH:+:${PATH}}' >> ~/.bashrc
   echo 'export LD_LIBRARY_PATH=/usr/local/cuda-12.8/lib64${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}' >> ~/.bashrc
 fi
+# shellcheck disable=SC1090
 source ~/.bashrc
 export PATH=/usr/local/cuda-12.8/bin:$PATH
 export CUDACXX=/usr/local/cuda-12.8/bin/nvcc
 
-# --- 必須ツール（ビルドツール + SDL3 GUI 依存）---
+# --- Git HTTP 設定（HTTP/2 トラブル回避用・任意だが Vast では推奨）---
+git config --global http.version HTTP/1.1
+git config --global http.postBuffer 524288000
+git config --global http.lowSpeedLimit 0
+git config --global http.lowSpeedTime 999999
+
+# --- 必須ツール（CMake + ビルドツール + SDL3 GUI 依存）---
+
+# CMake（snap 版）
+sudo snap install cmake --classic
+
+# 開発ツール・ライブラリ
 sudo apt update && sudo apt install -y \
   build-essential flex bison libgmp3-dev libmpc-dev libmpfr-dev libisl-dev texinfo \
   git ninja-build pkg-config curl zip unzip nasm \
@@ -76,8 +88,9 @@ sudo update-alternatives --set g++ /usr/local/gcc-14/bin/g++
 
 # --- vcpkg ---
 export VCPKG_ROOT=~/vcpkg
-git clone https://github.com/Microsoft/vcpkg.git $VCPKG_ROOT
-cd $VCPKG_ROOT && ./bootstrap-vcpkg.sh
+rm -rf "$VCPKG_ROOT"
+git clone https://github.com/Microsoft/vcpkg.git "$VCPKG_ROOT"
+cd "$VCPKG_ROOT" && ./bootstrap-vcpkg.sh
 echo 'export VCPKG_ROOT=~/vcpkg' >> ~/.bashrc
 echo 'export PATH="$VCPKG_ROOT:$PATH"' >> ~/.bashrc
 cd ~/repos
@@ -86,6 +99,7 @@ cd ~/repos
 sudo ln -sf /usr/local/gcc-14/lib64/libstdc++.so* /usr/lib/x86_64-linux-gnu/
 
 # --- LichtFeld-Studio ソース取得 ---
+rm -rf LichtFeld-Studio
 git clone --recursive https://github.com/MrNeRF/LichtFeld-Studio.git
 cd LichtFeld-Studio
 
@@ -97,6 +111,7 @@ if ! grep -q "gcc-14" ~/.bashrc; then
   echo 'export CUDACXX=/usr/local/cuda-12.8/bin/nvcc' >> ~/.bashrc
   echo 'export LD_LIBRARY_PATH=/usr/local/gcc-14/lib64:/usr/local/cuda-12.8/lib64${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}' >> ~/.bashrc
 fi
+# shellcheck disable=SC1090
 source ~/.bashrc
 export CC=/usr/local/gcc-14/bin/gcc
 export CXX=/usr/local/gcc-14/bin/g++
