@@ -1,7 +1,7 @@
 #!/bin/bash
 # LichtFeld-Studio Ubuntu 22.04 + GCC14 + CUDA12.8
 # 完全自動ビルド＆再配布ZIP統合スクリプト
-# 2026/02/24 更新版
+# 2026/03/23 SDL3 依存追加版
 
 set -e
 
@@ -40,12 +40,14 @@ source ~/.bashrc
 export PATH=/usr/local/cuda-12.8/bin:$PATH
 export CUDACXX=/usr/local/cuda-12.8/bin/nvcc
 
-# --- 必須ツール ---
-sudo snap install cmake --classic
+# --- 必須ツール（ビルドツール + SDL3 GUI 依存）---
 sudo apt update && sudo apt install -y \
   build-essential flex bison libgmp3-dev libmpc-dev libmpfr-dev libisl-dev texinfo \
   git ninja-build pkg-config curl zip unzip nasm \
-  libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libgl1-mesa-dev libglu1-mesa-dev \
+  libx11-dev libxft-dev libxext-dev \
+  libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev \
+  libgl1-mesa-dev libglu1-mesa-dev libegl1-mesa-dev \
+  libwayland-dev libxkbcommon-dev libibus-1.0-dev \
   autoconf autoconf-archive automake libtool m4 gettext libffi-dev libssl-dev
 
 # --- GCC 14.3.0 ---
