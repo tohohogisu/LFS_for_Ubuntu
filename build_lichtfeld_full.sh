@@ -1,7 +1,7 @@
 #!/bin/bash
 # LichtFeld-Studio Ubuntu 22.04 + GCC14 + CUDA12.8
 # 完全自動ビルド＆再配布ZIP統合スクリプト
-# 2026/03/23 SDL3 依存 & CMake 追加版
+# 2026/03/23 NVIDIA Driver 570 + CUDA 12.8 (apt) 版
 
 set -e
 
@@ -16,20 +16,21 @@ cd ~
 mkdir -p repos
 cd repos
 
-# --- CUDA 12.8 インストール ---
-echo "🔧 CUDA 12.8 セットアップ中..."
+# --- NVIDIA Driver 570 + CUDA 12.8 インストール ---
+echo "🔧 NVIDIA Driver 570 + CUDA 12.8 セットアップ中..."
 
-# apt pin ファイルを取得して優先度設定
-wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-ubuntu2204.pin
-sudo mv cuda-ubuntu2204.pin /etc/apt/preferences.d/cuda-repository-pin-600
+# NVIDIA 公式 CUDA APT リポジトリを keyring で追加
+wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-keyring_1.1-1_all.deb
+sudo dpkg -i cuda-keyring_1.1-1_all.deb
 
-# ローカル CUDA リポジトリ .deb を取得して登録
-wget https://developer.download.nvidia.com/compute/cuda/12.8.0/local_installers/cuda-repo-ubuntu2204-12-8-local_12.8.0-570.86.10-1_amd64.deb
-sudo dpkg -i cuda-repo-ubuntu2204-12-8-local_12.8.0-570.86.10-1_amd64.deb
-sudo cp /var/cuda-repo-ubuntu2204-12-8-local/cuda-*-keyring.gpg /usr/share/keyrings/
+# パッケージリスト更新
+sudo apt update -y
 
-# CUDA 12.8 ToolKit をインストール
-sudo apt update -y && sudo apt -y install cuda-toolkit-12-8
+# NVIDIA ドライバ（オープンカーネル版 570）
+sudo apt install -y nvidia-driver-570-open
+
+# CUDA 12.8 Toolkit 本体
+sudo apt install -y cuda-toolkit-12-8
 
 # --- PATH設定（永続化＋即時反映） ---
 if ! grep -q "cuda-12.8" ~/.bashrc; then
@@ -41,7 +42,7 @@ source ~/.bashrc
 export PATH=/usr/local/cuda-12.8/bin:$PATH
 export CUDACXX=/usr/local/cuda-12.8/bin/nvcc
 
-# --- Git HTTP 設定（HTTP/2 トラブル回避用・任意だが Vast では推奨）---
+# --- Git HTTP 設定（HTTP/2 トラブル回避用・Vast などで安定化）---
 git config --global http.version HTTP/1.1
 git config --global http.postBuffer 524288000
 git config --global http.lowSpeedLimit 0
